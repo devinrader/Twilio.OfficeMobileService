@@ -73,7 +73,7 @@ namespace Twilio.OfficeMobileService
             //TODO: Add code here that validates that the config properties exist with valid values
 
             XDocument doc = new XDocument(
-             new XDeclaration("1.0", "utf-16", "true"),             
+             new XDeclaration("1.0", "utf-8", "true"),             
              new XElement(ns + "serviceInfo", 
                  new XElement(ns+"serviceProvider", SERVICEPROVIDER),
                  new XElement(ns+"serviceUri", SERVICEURI),
@@ -133,21 +133,6 @@ namespace Twilio.OfficeMobileService
             }
 
             var profile = ProfileBase.Create(userId);
-
-            //validate the user exists in twilio by passing the account sid and auth token to the API
-            //var client = new TwilioRestClient( (string)profile.GetPropertyValue("AccountSid"), (string)profile.GetPropertyValue("AuthToken") );
-            //var acct = client.GetAccount();
-            //if ((acct.RestException!=null) && (acct.RestException.Status == "401"))
-            //{ 
-            //    info.Add(
-            //        new XElement(ns + "error",
-            //            new XAttribute("code", "unregistered"),
-            //            new XAttribute("severity", "failure")
-            //        )
-            //    );
-
-            //    return result.ToString();
-            //}
 
             //TODO: Validate that passing back blank reply/smtp data is OK here since its included in later calls
 
@@ -277,9 +262,79 @@ namespace Twilio.OfficeMobileService
             XElement response = new XElement(ns + "xmsResponses");
             result.Add(response);
 
-            XDocument xmsDataDoc = XDocument.Parse(packageXml);
+            XDocument xmsPackageDoc = XDocument.Parse(packageXml);
 
-            //can I just parse the doc for all of the xmsData elements an call DeliverXms for each???
+            var datas = xmsPackageDoc.Element(ns + "xmsBatch").Elements(ns + "xmsData");
+
+            foreach (var data in datas)
+            {
+
+                XElement xmsDataDoc = data;
+                string userId = xmsDataDoc.Element(ns + "user").Element(ns + "userId").Value;
+                string password = xmsDataDoc.Element(ns + "user").Element(ns + "password").Value;
+
+                if (!Membership.ValidateUser(userId, password))
+                {
+                    response.Add(
+                        new XElement(ns + "error",
+                            new XAttribute("code", "unregistered"),
+                            new XAttribute("severity", "failure")
+                        )
+                    );
+
+                    return result.ToString();
+                }
+
+                var user = Membership.GetUser(userId);
+                var profile = ProfileBase.Create(userId);
+
+                //check to make sure this is not an MMS since we don't support
+                string service = xmsDataDoc.Element(ns + "xmsHead").Element(ns + "requiredService").Value;
+                if (service != "SMS_SENDER")
+                {
+                    response.Add(
+                        new XElement(ns + "error",
+                            new XAttribute("code", "unregisteredService"),
+                            new XAttribute("severity", "failure"),
+                            new XElement(ns + "content", "MMS")
+                        )
+                    );
+
+                    return result.ToString();
+                }
+
+                //TODO: The specification includes the notion of schedule messages. Do we need to implement that?
+
+                string replyPhone = xmsDataDoc.Element(ns + "user").Element(ns + "replyPhone").Value;
+                var recipients = xmsDataDoc.Element(ns + "xmsHead").Element(ns + "to").Elements(ns + "recipient");
+                var contents = xmsDataDoc.Element(ns + "xmsBody").Elements(ns + "content");
+
+                TwilioRestClient client = new TwilioRestClient((string)profile.GetPropertyValue("AccountSid"), (string)profile.GetPropertyValue("AuthToken"));
+
+                bool _hasErrors = false;
+                foreach (var recipient in recipients)
+                {
+                    foreach (var content in contents)
+                    {
+                        var sms = client.SendSmsMessage(replyPhone, recipient.Value, content.Value);
+                        if (sms.RestException != null)
+                        {
+                            response.Add(
+                                new XElement(ns + "error",
+                                    new XAttribute("code", "invalidRecipient"),
+                                    new XAttribute("severity", "failure"),
+                                    new XElement(ns + "content", sms.RestException.Message),
+                                    new XElement(ns + "recipientList", recipient.Value)
+                                )
+                            );
+
+                            _hasErrors = true;
+                        }
+
+                    }
+                }
+
+            }
 
             return result.ToString();
 
