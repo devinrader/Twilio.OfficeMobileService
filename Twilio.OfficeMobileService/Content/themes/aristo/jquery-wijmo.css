@@ -3,7 +3,7 @@
  * Wijmo Aristo Theme
  * http://wijmo.com/
  * 
- * Copyright(c) GrapeCity, Inc.  All rights reserved.
+ * Copyright(c) ComponentOne, LLC.  All rights reserved.
  * 
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * licensing@wijmo.com
@@ -21,9 +21,8 @@
 }
 .ui-helper-hidden-accessible
 {
-    position: absolute !important;
-    clip: rect(1px 1px 1px 1px);
-    clip: rect(1px,1px,1px,1px);
+    position: absolute;
+    left: -99999999px;
 }
 .ui-helper-reset
 {
@@ -36,16 +35,28 @@
     font-size: 100%;
     list-style: none;
 }
-.ui-helper-clearfix:before, .ui-helper-clearfix:after {
-	content: "";
-	display: table;
+.ui-helper-clearfix:after
+{
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
 }
-.ui-helper-clearfix:after {
-	clear: both;
+.ui-helper-clearfix
+{
+    display: inline-block;
 }
-.ui-helper-clearfix {
-	zoom: 1;
+/* required comment for clearfix to work in Opera \*/
+* html .ui-helper-clearfix
+{
+    height: 1%;
 }
+.ui-helper-clearfix
+{
+    display: block;
+}
+/* end clearfix */
 .ui-helper-zfix
 {
     width: 100%;
@@ -114,7 +125,7 @@
 .ui-widget
 {
     font-family: Arial,sans-serif;
-    font-size: 100%;
+    font-size: 1.1em;
 }
 .ui-widget .ui-widget
 {
@@ -2749,9 +2760,4 @@ div.wijmo-wijcalendar table.wijmo-wijcalendar-mygrid
 div.wijmo-wijribbon .ui-icon, .wijmo-wijribbon-abbrevicon, div.wijmo-wijribbon-simple span.ui-icon, .wijmo-wijribbon .wijmo-wijribbon-group .ui-button:hover .ui-icon, div.wijmo-wijribbon-modes span.ui-icon, .wijmo-wijribbon-group .wijmo-wijribbon-abbrevgroup:hover .ui-icon, .wijmo-wijribbon-group .wijmo-wijribbon-abbrevgroup:hover .wijmo-wijribbon-abbrevicon
 {
     background-image: url("images/wijmo-ui-icons_000000_240x112.png");
-}
-
-.wijmo-wijinput .wijmo-wijinput-input
-{
-    color: #313131;
 }
