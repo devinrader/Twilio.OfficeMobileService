@@ -1,0 +1,166 @@
+﻿@model Twilio.OfficeMobileService.Models.ConfigurationModel
+
+@{
+    ViewBag.Title = "Configure";
+}
+
+<hgroup class="title">
+    <h1>Configure.</h1>
+    <h2>Use the form below to configure your account.</h2>
+</hgroup>
+
+<script src="@Url.Content("~/Scripts/jquery.validate.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.wijmo-open.all.2.0.0.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.wijmo-complete.all.2.0.0.min.js")" type="text/javascript"></script>
+
+<script type="text/javascript">
+    $(function () {
+
+        $("input:[type=text][name=SmtpPasswordDisplay]").wijinputmask({ passwordChar: '•' });
+
+        $("input:[type=text][name=SmtpPasswordDisplay]").wijinputmask({ textChanged: function (e, arg) {
+                var value = $("input:[type=text][name=SmtpPasswordDisplay]").wijinputmask('getPostValue');
+                $("input:[type=hidden][name=SmtpPassword]").val(value);
+            }
+        });
+
+        if ($('input:radio[name=ReplyToMailbox]:checked').val() == "true") {
+            $('input.optionalInput').removeAttr('disabled', 'disabled');
+        } else {
+            $('input.optionalInput').attr('disabled', 'disabled');
+        }
+
+        $("input:radio[name=ReplyToMailbox]").click(function () {
+            var value = $(this).val();
+            if (value == 'true') {
+                $('input.optionalInput').removeAttr('disabled', 'disabled');
+            } else {
+                $('input.optionalInput').attr('disabled', 'disabled');
+            }
+        });
+
+        $.validator.addMethod('requiredif',
+          function (value, element, parameters) {
+
+              var id = '#' + parameters['dependentproperty'];
+
+              alert(id);
+
+              // get the target value (as a string, 
+              // as that's what actual value will be)
+              var targetvalue = parameters['targetvalue'];
+              targetvalue =
+                (targetvalue == null ? '' : targetvalue).toString();
+
+              // get the actual value of the target control
+              // note - this probably needs to cater for more 
+              // control types, e.g. radios
+              var control = $(id);
+              var controltype = control.attr('type');
+              var actualvalue =
+                  controltype === 'checkbox' ?
+                  control.attr('checked').toString() :
+                  control.val();
+
+              // if the condition is true, reuse the existing 
+              // required field validator functionality
+              if (targetvalue === actualvalue)
+                  return $.validator.methods.required.call(
+                    this, value, element, parameters);
+
+              alert("return true");
+              return true;
+          }
+      );
+
+        $.validator.unobtrusive.adapters.add('requiredif', ['dependentproperty', 'targetvalue'], function (options) {
+            options.rules["required"] = function (element) {
+                alert("foo");
+                return $('#' + options.params.dependentproperty).val() == options.params.targetvalue
+            };
+            if (options.message) {
+                options.messages["required"] = options.message;
+            }
+            $('#' + options.params.dependentproperty).blur(function () {
+                $('#' + options.element.name).valid();
+            });
+        });
+
+    });
+
+
+
+ </script>
+
+@Html.ValidationSummary(true, "Account configuration was unsuccessful. Please correct the errors and try again.")
+
+@using (Html.BeginForm((string)ViewBag.FormAction, "Account", FormMethod.Post, new { id = "configForm" }))
+{
+    
+    <fieldset>
+        <legend>Configuration Form</legend>
+        <ol>
+            <li>
+                @Html.LabelFor(m => m.PhoneNumber, new { @class = "big" }) 
+                @Html.TextBoxFor(m => m.PhoneNumber)
+                @Html.ValidationMessageFor(m => m.PhoneNumber)
+                
+            </li>
+
+             <li>
+                @Html.LabelFor(m => m.AccountSid, new { @class = "big" })
+                @Html.TextBoxFor(m => m.AccountSid)
+                @Html.ValidationMessageFor(m => m.AccountSid)
+            </li>
+            <li>
+                @Html.LabelFor(m => m.AuthToken, new { @class = "big" })
+                @Html.TextBoxFor(m => m.AuthToken)
+                @Html.ValidationMessageFor(m => m.AuthToken)
+            </li>
+            
+            <li>
+                @Html.RadioButtonFor(m => m.ReplyToMailbox, "false") <label class="inline" for="ReplyToMailbox">Reply to mobile</label>
+                @Html.RadioButtonFor(m => m.ReplyToMailbox, "true") <label class="inline" for="ReplyToMailbox">Reply to mail box</label>
+                @Html.ValidationMessageFor(m => m.ReplyToMailbox)
+            </li>           
+
+            <li>
+                <div style="margin-left:30px; margin-top:10px;">
+                    <ol>
+                        <li>
+                            @Html.LabelFor(m => m.SmtpServerName)
+                            @Html.TextBoxFor(m => m.SmtpServerName, new { @class = "optionalInput" })
+                            @Html.ValidationMessageFor(m => m.SmtpServerName)
+                        </li>           
+                        <li>
+                            @Html.LabelFor(m => m.SmtpServerPort)
+                            @Html.TextBoxFor(m => m.SmtpServerPort, new { @class = "optionalInput" })
+                            @Html.ValidationMessageFor(m => m.SmtpServerPort)
+                        </li>
+                        <li>
+                            @Html.LabelFor(m => m.SmtpUserName)
+                            @Html.TextBoxFor(m => m.SmtpUserName, new { @class = "optionalInput" })
+                            @Html.ValidationMessageFor(m => m.SmtpUserName)
+                        </li>
+                        <li>                            
+                            @Html.LabelFor(m => m.SmtpPassword)
+                            @Html.HiddenFor(m => m.SmtpPassword)
+                            @Html.EditorFor(m => m.SmtpPassword, "string", "SmtpPasswordDisplay")
+                            @Html.ValidationMessageFor(m => m.SmtpPassword)
+                        </li>
+                        <li>
+                            @Html.CheckBoxFor(m => m.UseSmtpSsl, new { @class = "optionalInput" })
+                            @Html.LabelFor(m => m.UseSmtpSsl, new { @class = "checkbox" })
+                            @Html.ValidationMessageFor(m => m.UseSmtpSsl)
+                        </li>           
+                    </ol>
+                </div>
+            </li>
+        </ol>
+        <input type="submit" value="Save" title="Save" />
+    </fieldset>
+}
+
+
+ 
